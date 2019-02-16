@@ -50,6 +50,9 @@ install_dependencies() {
 	sudo pip install gdata psycogreen ofxparse
 	sudo pip install xlrd
 	sudo pip install xlsxwriter
+	sudo pip install pypdf2
+	sudo pip install passlib
+	sudo pip3 install passlib
 
 	echo -e "[Install Dependencies] --- Install other required packages"
 	sudo apt-get install node-clean-css -y
@@ -57,7 +60,7 @@ install_dependencies() {
 	sudo apt-get install python-gevent -y
 
 	echo -e "[Install Dependencies] --- Install python libraries for AWS s3 bucket"
-	sudo pip install boto
+	sudo pip install boto -y
 }
 
 install_odoo() {
@@ -125,6 +128,10 @@ install_odoo() {
 	#--------------------------------------------------
 	echo -e "---- Installing ODOO Server ----"
 	sudo git clone --depth 1 --branch $OE_VERSION https://github.com/odoo/odoo.git $OE_HOME_EXT/
+
+	echo -e "---- Installing requirement.txt for Odoo ----"
+	sudo pip install -r $OE_HOME_EXT/requirements.txt
+	sudo pip3 install -r $OE_HOME_EXT/requirements.txt
 
 	echo -e "---- Setting permissions on home folder ----"
 	sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
