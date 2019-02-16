@@ -1,18 +1,17 @@
 #!/bin/bash
 ################################################################################
 # Script for installing Odoo V9 on Ubuntu 14.04 LTS (could be used for other version too)
-# Author: Tintumon
 #-------------------------------------------------------------------------------
 # This script will install Odoo on your Ubuntu 14.04 server. It can install multiple Odoo instances
 # in one Ubuntu because of the different xmlrpc_ports
 #-------------------------------------------------------------------------------
 # Make a new file:
-# touch odoo_install.sh
-# sudo nano odoo_install.sh
+# touch odoo_install_with_nginx.sh
+# sudo nano odoo_install_with_nginx.sh
 # Place this content in it and then make the file executable:
 # sudo chmod +x odoo_install.sh
 # Execute the script to install Odoo:
-# ./odoo_install
+# ./odoo_install_with_nginx
 ################################################################################
  
 
@@ -45,6 +44,7 @@ install_dependencies() {
 	sudo apt-get install wget subversion git bzr bzrtools python-pip gdebi-core -y
 		
 	echo -e "[Install Dependencies] ---- Install python packages ----"
+	sudo apt-get install software-properties-common
 	sudo apt-get install python-dateutil python-feedparser python-ldap python-libxslt1 python-lxml python-mako python-openid python-psycopg2 python-pybabel python-pychart python-pydot python-pyparsing python-reportlab python-simplejson python-tz python-vatnumber python-vobject python-webdav python-werkzeug python-xlwt python-yaml python-zsi python-docutils python-psutil python-mock python-unittest2 python-jinja2 python-pypdf python-decorator python-requests python-passlib python-pil -y
 		
 	echo -e "[Install Dependencies] ---- Install python libraries ----"
@@ -58,7 +58,10 @@ install_dependencies() {
 	sudo apt-get install python-gevent -y
 
 	echo -e "[Install Dependencies] --- Install python libraries for AWS s3 bucket"
-	sudo pip install boto
+	sudo pip install boto -y
+
+	echo -e "[Install nginx]"
+	sudo apt-get install nginx -y
 }
 
 install_odoo() {
@@ -131,7 +134,7 @@ install_odoo() {
 	sudo chown -R $OE_USER:$OE_USER $OE_HOME/*
 
 	echo -e " * Create server config file"
-	sudo cp $OE_HOME_EXT/debian/openerp-server.conf /etc/${OE_CONFIG}.conf
+	sudo cp $OE_HOME_EXT/debian/odoo.conf /etc/${OE_CONFIG}.conf
 	sudo chown $OE_USER:$OE_USER /etc/${OE_CONFIG}.conf
 	sudo chmod 640 /etc/${OE_CONFIG}.conf
 
@@ -225,6 +228,41 @@ EOF
 	echo -e " * Change default xmlrpc port"
 	sudo su root -c "echo 'xmlrpc_port = $OE_PORT' >> /etc/${OE_CONFIG}.conf"
 
+	echo -e " * config nginx"
+	sudo rm /etc/nginx/sites-enabled/default
+
+echo -e " * Create nginx file"
+sudo bash -c "cat <<EOF > /etc/nginx/conf.d/odoo.conf
+	#worker_processes  1;
+
+	#events {
+	#    worker_connections  1024;
+	#}
+
+	    server {
+	        listen  80;
+	        server_name 127.0.0.1;
+	        location /socket.io {
+	            proxy_pass   http://127.0.0.1:8069;
+	            proxy_http_version 1.1;
+
+	            proxy_set_header Upgrade $http_upgrade;
+	            proxy_set_header Connection "upgrade";
+	            proxy_set_header Host $host;
+
+	            proxy_set_header X-Real-IP $remote_addr;
+	            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	            proxy_set_header X-Forwarded-Proto https;
+
+	            proxy_redirect off;
+	         }
+
+	        location / {
+	            proxy_pass   http://127.0.0.1:8069;
+	        }
+	    }
+EOF"
+
 	echo -e " * Start ODOO on Startup"
 	sudo update-rc.d $OE_CONFIG defaults
 
@@ -243,6 +281,7 @@ EOF
 	echo -e "-----------------------------------------------------------"
 	sudo service odoo-server start
 	sudo service postgresql start
+	sudo service nginx start
 	sudo rm -rf wkhtmlto*
 }
 
@@ -256,7 +295,6 @@ then
     sudo deluser odoo
     sudo deluser postgres
     sudo apt-get purge postgresql -y
-    sudo apt-get autoremove -f -y
     sudo apt-get purge postgresql-* -y
     sudo apt-get autoremove -f -y
     sudo pkill python
@@ -270,11 +308,13 @@ fi
 }
 
 start_odoo(){
-	echo -e "[Starting/Restarting odoo]"
+	echo -e "[Starting/Restarting Odoo, PostgreSQL and nginx]"
 	sudo service odoo-server start
 	sudo service odoo-server restart
 	sudo service postgresql start
 	sudo service postgresql restart
+	sudo service nginx start
+	sudo service nginx restart
 }
 
 update_odoo(){
@@ -295,7 +335,7 @@ usage() {
 	usage: $0 options environment
 	OPTIONS:
 		-i	Install odoo
-		-r	Remove odoo
+		-r	Remove odoo Completely
 		-u	Update odoo
 		-s	Start/Restart odoo
 		-k	Kill odoo
