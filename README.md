@@ -1,48 +1,53 @@
 # odoo_install_script
-Script for Install, Update, Restart and Remove Odoo
 
-Script for installing Odoo on Ubuntu LTS (could be used for other version too)
+Script for Install, Update, Restart and Remove Odoo on Ubuntu LTS (could be used for other version too). Has Option of nginx configuration along with installing Odoo.
 
-Author: Tintumon. M
+Upgraded By : Tintumon. M - [Visit my website](http://tintumon.co.in/)
 
-Inspired by : Yenthe V.G
+Thanks to Author : Yenthe V.G
 
-Initial code copied from https://github.com/Yenthe666/InstallScript
+Initial code copied from [InstallScript](https://github.com/Yenthe666/InstallScript)
 
-Thanks Yenthe V.G
 -------------------------------------------------------------------------------
 This script will install Odoo on your Ubuntu server. It can install multiple Odoo instances
 in one Ubuntu because of the different xmlrpc_ports
 -------------------------------------------------------------------------------
-Make a new file:
+**Make a new file:**
 
-Download file using sudo wget https://raw.githubusercontent.com/tintumonmartin/odoo_install_script/master/odoo_install.sh
+**Download _odoo_install.sh_ file using this command in terminal**
 
+`sudo wget https://raw.githubusercontent.com/tintumonmartin/odoo_install_script/master/odoo_install.sh`
+
+-Or-
+
+**Create _odoo_install.sh_ file using this command in terminal**
+
+```
 touch odoo_install.sh
 
 sudo nano odoo_install.sh
+```
 
-Place this content in it and then make the file executable:
+**Place this content in it and then make the file executable:**
 
-sudo chmod +x odoo_install.sh
+`sudo chmod +x odoo_install.sh`
 
-Execute the script to install Odoo:
+**Execute the script to install Odoo:**
 
-./odoo_install.sh
+`./odoo_install.sh -i`
 
-Use this script with options:
+**Use this script with options:**
 
--i Install.
+-i Install Odoo.
 
--r Remove.
+-n Install Odoo with Nginx Configuration
 
--u Update.
+-r Remove Odoo.
+
+-u Update Odoo Code from Github.
 
 -s Start/Restart Odoo.
 
 -k Kill/Stop Odoo.
 
-For example type "./odoo_install.sh -i" for install odoo
-
-
-Follow the same to install Odoo using this script along with nginx configurations using the file "odoo_install_with_nginx.sh".
+For example type `./odoo_install.sh -i` for install Odoo

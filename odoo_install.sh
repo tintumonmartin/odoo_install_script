@@ -71,8 +71,8 @@ sudo apt-get install wget git bzr python-pip gdebi-core -y
 echo -e "\n---- Install python packages ----"
 sudo apt-get install libxml2-dev libxslt1-dev zlib1g-dev -y
 sudo apt-get install libsasl2-dev libldap2-dev libssl-dev -y
-sudo apt-get install python-pypdf2 python-dateutil python-feedparser python-ldap python-libxslt1 python-lxml python-mako python-openid python-psycopg2 python-pybabel python-pychart python-pydot python-pyparsing python-reportlab python-simplejson python-tz python-vatnumber python-vobject python-webdav python-werkzeug python-xlwt python-yaml python-zsi python-docutils python-psutil python-mock python-unittest2 python-jinja2 python-pypdf python-decorator python-requests python-passlib python-pil -y
-sudo pip3 install pypdf2 Babel passlib Werkzeug decorator python-dateutil pyyaml psycopg2 psutil html2text docutils lxml pillow reportlab ninja2 requests gdata XlsxWriter vobject python-openid pyparsing pydot mock mako Jinja2 ebaysdk feedparser xlwt psycogreen suds-jurko pytz pyusb greenlet xlrd chardet libsass
+sudo apt-get install python-pypdf2 python-dateutil python-feedparser python-ldap python-libxslt1 python-mako python-openid python-psycopg2 python-pybabel python-pychart python-pydot python-pyparsing python-reportlab python-simplejson python-tz python-vatnumber python-vobject python-webdav python-werkzeug python-xlwt python-yaml python-zsi python-docutils python-psutil python-mock python-unittest2 python-jinja2 python-pypdf python-decorator python-requests python-passlib python-pil -y
+sudo pip3 install pypdf2 Babel passlib Werkzeug decorator python-dateutil pyyaml psycopg2 psutil html2text docutils pillow reportlab ninja2 requests gdata XlsxWriter vobject python-openid pyparsing pydot mock mako Jinja2 ebaysdk feedparser xlwt psycogreen suds-jurko pytz pyusb greenlet xlrd chardet libsass
 
 echo -e "\n---- Install python libraries ----"
 # This is for compatibility with Ubuntu 16.04. Will work on 14.04, 15.04 and 16.04
@@ -87,7 +87,7 @@ echo -e "\n--- Install python packages"
 sudo apt-get install software-properties-common
 
 echo -e "\n--- Install python libraries for AWS s3 bucket"
-sudo pip install boto -y
+sudo pip install boto
 
 #--------------------------------------------------
 # Install Wkhtmltopdf if needed
@@ -278,12 +278,78 @@ sudo service postgresql start
 sudo rm -rf wkhtmlto*
 }
 
+odoo_nginx() {
+install_odoo
+
+echo "[Install nginx]"
+sudo apt-get install nginx -y
+sudo service nginx start
+
+echo "* Configuring nginx"
+sudo rm /etc/nginx/sites-enabled/default
+sudo rm /etc/nginx/sites-available/default
+
+echo "* Create nginx file for Odoo"
+#This wget downloads the preconfigured odoo.conf into sites-available folder.
+#sudo wget https://raw.githubusercontent.com/tintumonmartin/odoo_install_script/master/odoo.conf /etc/nginx/sites-available/
+
+sudo bash -c 'cat <<EOF > /etc/nginx/sites-available/odoo.com
+#odoo server
+upstream odoo {
+    server 127.0.0.1:8069;
+}
+
+upstream odoo-chat {
+    server 127.0.0.1:8072;
+}
+
+server {
+    listen      80 default;
+    server_name 127.0.0.1;
+
+    access_log  /var/log/nginx/odoo.access.log;
+    error_log   /var/log/nginx/odoo.error.log;
+
+    proxy_buffers 16 64k;
+    proxy_buffer_size 128k;
+
+    location / {
+        proxy_pass  http://odoo;
+        proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        proxy_redirect off;
+
+        proxy_set_header    Host            \$host;
+        proxy_set_header    X-Real-IP       \$remote_addr;
+        proxy_set_header    X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto https;
+    }
+
+    location /longpolling {
+        proxy_pass http://odoo-chat;
+    }
+
+    location ~* /web/static/ {
+        proxy_cache_valid 200 60m;
+        proxy_buffering on;
+        expires 864000;
+        proxy_pass http://odoo;
+    }
+}
+EOF'
+
+echo "* Create nginx link from sites-available to sites-enabled"
+sudo ln -s /etc/nginx/sites-available/odoo.com /etc/nginx/sites-enabled/odoo.com
+
+echo "* Restarting nginx"
+sudo service nginx restart
+}
+
 remove_odoo() {
-read -p "`echo $'\n '`Are you sure want to remove odoo? [Y/N]" -n 1 -r
+read -p "`echo $'\n '`Are you sure want to remove Odoo? [Y/N]" -n 1 -r
 echo -e
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-    echo -e "`echo $'\n '`[Uninstalling odoo-server]"
+    echo "`echo $'\n '`[Uninstalling odoo-server]"
     sudo deluser odoo
     sudo deluser postgres
     sudo apt-get purge postgresql -y
@@ -300,35 +366,39 @@ fi
 }
 
 start_odoo(){
-	echo -e "[Starting/Restarting Odoo and PostgreSQL]"
-	sudo service odoo-server start
-	sudo service odoo-server restart
-	sudo service postgresql start
-	sudo service postgresql restart
+    echo "[Starting/Restarting Odoo, PostgreSQL and Nginx]"
+    sudo pkill python*
+    sudo service odoo-server start
+    sudo service odoo-server restart
+    sudo service postgresql start
+    sudo service postgresql restart
+    sudo service nginx start
+    sudo service nginx restart
 }
 
 update_odoo(){
-	echo -e "[Updating odoo]"
-	sudo git pull $OE_HOME_EXT/
-	start_odoo
+    echo "[Updating Odoo]"
+    sudo git pull $OE_HOME_EXT/
+    start_odoo
 }
 
 kill_odoo(){
-	echo -e "[Killing odoo]"
-	sudo service odoo-server stop
-	sudo pkill python
-	sudo service postgresql stop
+    echo "[Killing Odoo]"
+    sudo service odoo-server stop
+    sudo pkill python
+    sudo service postgresql stop
 }
 
 usage() {
 cat <<EOF
 usage: $0 options environment
 OPTIONS:
-    -i	Install odoo
-    -r	Remove odoo
-    -u	Update odoo
-    -s	Start/Restart odoo
-    -k	Kill odoo
+    -i    Install Odoo
+    -n    Install Odoo with nginx
+    -r    Remove Odoo
+    -u    Update Odoo code
+    -s    Start/Restart Odoo
+    -k    Kill Odoo
 EOF
 }
 
@@ -338,12 +408,16 @@ then
 usage
 exit 1
 else
-while getopts “irusk” OPTIONS
+while getopts “inrusk” OPTIONS
 do
     case $OPTIONS in
         i)
-            echo -e "Installing Odoo"
+            echo "Installing Odoo"
             install_odoo
+            ;;
+        n)
+            echo "Installing Odoo with nginx"
+            odoo_nginx
             ;;
         r)
             remove_odoo
