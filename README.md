@@ -1,5 +1,7 @@
 # odoo_install_script
 
+Odoo Installation Script with Nginx auto congifuration option
+
 Script for Install, Update, Restart and Remove Odoo on Ubuntu LTS (could be used for other version too). Has Option of nginx configuration along with installing Odoo.
 
 Upgraded By : Tintumon. M - [Visit my website](http://tintumon.co.in/)
