@@ -1,15 +1,13 @@
 #!/usr/bin/env bash
 
-#S_LOCATION="/home/ubuntu/other_workspace/nConnect/"
 S_LOCATION="/home/ubuntu/workspace/dump_zip/"
-#S_LOCATION="/home/ubuntu/nConnect_backup/"
 D_LOCATION="/home/ubuntu/other_workspace/nConnect_v11/"
 
 
 SERVER=""
 USER_SERVER="ubuntu@$SERVER"
 PASSWORD=''
-
+DB_NAME = ''
 unzip_dump() {
 cd $S_LOCATION
 #rm -rf dump.sql filestore manifest.json
@@ -19,7 +17,7 @@ echo "-- Script completed --"
 
 update_postgres(){
 sudo su postgres
-psql devchettinad_oct_4 < /home/ubuntu/workspace/dump_zip/dump.sql
+psql $DB_NAME < /home/ubuntu/workspace/dump_zip/dump.sql
 #    cat <<EOF
 #    Enter Commit message:
 #EOF
