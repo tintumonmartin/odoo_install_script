@@ -1,35 +1,39 @@
 #!/usr/bin/env bash
 
 S_LOCATION="/home/ubuntu/workspace/dump_zip/"
-D_LOCATION="/home/ubuntu/other_workspace/nConnect_v11/"
+D_LOCATION="/home/ubuntu/other_workspace/"
 
 
 SERVER=""
 USER_SERVER="ubuntu@$SERVER"
 PASSWORD=''
-DB_NAME = ''
+DB_NAME='test_academic_latest_2019_09_11'
+
 unzip_dump() {
 cd $S_LOCATION
-#rm -rf dump.sql filestore manifest.json
+rm -rf dump.sql filestore manifest.json
 unzip *.zip
 echo "-- Script completed --"
 }
 
-update_postgres(){
+update_postgres_v9(){
 sudo su postgres
-psql $DB_NAME < /home/ubuntu/workspace/dump_zip/dump.sql
-#    cat <<EOF
-#    Enter Commit message:
-#EOF
-#    git commit -am "Updated with new code"
-#    git push
+echo "-- Postgresql version 9.3 with port 5432"
+psql -p 5432  $DB_NAME < /home/ubuntu/workspace/dump_zip/dump.sql
+}
+
+update_postgres_v11(){
+sudo su postgres
+echo "-- Postgresql version 11 with port 5433"
+psql -p 5433 $DB_NAME < /home/ubuntu/workspace/dump_zip/dump.sql
 }
 usage(){
 cat <<EOF
     usage: $0 options
     OPTIONS:
         -u    unzip db dump
-        -r    restore dump into postgres
+        -p    restore dump into postgres v9
+        -r    restore dump into postgres v11
     Eg:
        sh <file-name> -u
 EOF
@@ -39,13 +43,16 @@ then
     usage
     exit 1
 else
-    while getopts “ur” OPTIONS
+    while getopts “upr” OPTIONS
     do case $OPTIONS in
            u)   echo "Unzip dump"
                 unzip_dump
                 ;;
+           p)   echo "Restore dump into postgres"
+                update_postgres_v9
+                ;;
            r)   echo "Restore dump into postgres"
-                update_postgres
+                update_postgres_v11
                 ;;
            *)   usage
                 exit
