@@ -5,7 +5,8 @@ D_LOCATION="/home/tintumon/other_workspace/destination/"
 
 
 SERVER=""
-USER_SERVER="ubuntu@$SERVER"
+USER=""
+USER_SERVER="$USER@$SERVER"
 PASSWORD=''
 
 copy_code() {
@@ -54,7 +55,7 @@ else
            c)   echo "Fetch, Pull and Copy"
                 copy_code
                 ;;
-           u)   echo "Updating Pappaya"
+           u)   echo "Updating Code"
                 update_pappaya
                 ;;
            *)   usage
